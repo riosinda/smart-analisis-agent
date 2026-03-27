@@ -228,7 +228,8 @@ def explain_trend(n_weeks: int = 5, top_n: int = 10, country: str = None,
     n_weeks = min(n_weeks, 8)
     start_col = _ROLL_COLS[-(n_weeks + 1)]
 
-    mask = _df[start_col].notna() & _df["L0W_ROLL"].notna()
+    # Excluir filas donde el valor inicial es 0 (generan growth_pct = inf)
+    mask = _df[start_col].notna() & _df["L0W_ROLL"].notna() & (_df[start_col] != 0)
     if country:
         mask &= _df["COUNTRY_NORM"] == _normalize(country)
     if metric:
