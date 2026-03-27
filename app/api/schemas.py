@@ -8,4 +8,5 @@ class ChatRequest(BaseModel):
 
 class ChatResponse(BaseModel):
     response: str = Field(..., description="Respuesta del agente")
+    charts: list[str] = Field(default_factory=list, description="Plotly JSONs de gráficos generados")
     thread_id: str = Field(..., description="ID de conversación")

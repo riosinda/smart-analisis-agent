@@ -1,8 +1,8 @@
 from fastapi import APIRouter, HTTPException
-from langchain_core.messages import HumanMessage
+from langchain_core.messages import HumanMessage, ToolMessage
 
 from app.agent.graph import build_agent
-from app.agent.tools import TOOLS
+from app.agent.tools import TOOLS, CHART_PREFIX
 from app.api.schemas import ChatRequest, ChatResponse
 
 router = APIRouter()
@@ -24,8 +24,17 @@ async def chat(request: ChatRequest) -> ChatResponse:
             {"messages": [HumanMessage(content=request.message)]},
             config=config,
         )
-        response_text = result["messages"][-1].content
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-    return ChatResponse(response=response_text, thread_id=request.thread_id)
+    messages = result["messages"]
+    response_text = messages[-1].content
+
+    # Extraer Plotly JSONs de los ToolMessages generados en esta invocación
+    charts = [
+        msg.content[len(CHART_PREFIX):]
+        for msg in messages
+        if isinstance(msg, ToolMessage) and msg.content.startswith(CHART_PREFIX)
+    ]
+
+    return ChatResponse(response=response_text, charts=charts, thread_id=request.thread_id)
