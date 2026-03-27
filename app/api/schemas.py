@@ -1,0 +1,11 @@
+from pydantic import BaseModel, Field
+
+
+class ChatRequest(BaseModel):
+    message: str = Field(..., description="Mensaje del usuario")
+    thread_id: str = Field(..., description="ID de conversación para mantener memoria entre mensajes")
+
+
+class ChatResponse(BaseModel):
+    response: str = Field(..., description="Respuesta del agente")
+    thread_id: str = Field(..., description="ID de conversación")
