@@ -2,6 +2,7 @@ import unicodedata
 from pathlib import Path
 
 import pandas as pd
+import plotly.graph_objects as go
 from langchain_core.tools import tool
 
 # ---------------------------------------------------------------------------
@@ -276,11 +277,68 @@ def list_metrics() -> str:
     return "\n".join(lines)
 
 
+CHART_PREFIX = "__CHART__:"
+
+
+@tool
+def plot_zone_trend(zone: str, metric: str, n_weeks: int = 8) -> str:
+    """
+    Genera un gráfico interactivo de la evolución semanal de una métrica en una zona.
+    Usar cuando el usuario pida "grafica", "muéstrame visualmente", "ver la evolución" o "cómo ha ido".
+    Para obtener los datos en tabla usar get_zone_trend en su lugar.
+
+    Args:
+        zone: Nombre de la zona (puede ser parcial, ej: "Chapinero").
+        metric: Nombre de la métrica.
+        n_weeks: Semanas hacia atrás a graficar (máximo 8). Default 8.
+    """
+    n_weeks = min(n_weeks, 8)
+    weeks = _ROLL_COLS[-(n_weeks + 1):]
+    week_labels = [f"L{8 - i}W" for i in range(len(weeks))]
+
+    mask = (_df["ZONE_NORM"] == _normalize(zone)) & (_df["METRIC_NORM"] == _normalize(metric))
+    rows = _df[mask]
+
+    if rows.empty:
+        mask = (_df["ZONE_NORM"].str.contains(_normalize(zone), na=False)) & \
+               (_df["METRIC_NORM"] == _normalize(metric))
+        rows = _df[mask]
+
+    if rows.empty:
+        return f"No se encontró la zona '{zone}' con la métrica '{metric}'."
+
+    fig = go.Figure()
+
+    for _, row in rows.iterrows():
+        values = [row[w] for w in weeks]
+        fig.add_trace(go.Scatter(
+            x=week_labels,
+            y=values,
+            mode="lines+markers",
+            name=f"{row['ZONE']} ({row['COUNTRY']})",
+            line=dict(width=2),
+            marker=dict(size=7),
+        ))
+
+    fig.update_layout(
+        title=f"{metric} — {zone}",
+        xaxis_title="Semana",
+        yaxis_title="Valor",
+        template="plotly_dark",
+        hovermode="x unified",
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+        margin=dict(l=40, r=20, t=60, b=40),
+    )
+
+    return CHART_PREFIX + fig.to_json()
+
+
 # Lista de tools para registrar en el agente
 TOOLS = [
     get_top_zones,
     compare_segments,
     get_zone_trend,
+    plot_zone_trend,
     aggregate_metric,
     find_zones_multi_criteria,
     explain_trend,
