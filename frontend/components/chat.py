@@ -9,11 +9,11 @@ def render_chat() -> None:
     """Renderiza el historial del chat y maneja el input del usuario."""
 
     # Historial de mensajes
-    for msg in st.session_state.messages:
+    for idx, msg in enumerate(st.session_state.messages):
         with st.chat_message(msg["role"]):
             render_message(msg["content"])
             if msg.get("charts"):
-                render_charts(msg["charts"])
+                render_charts(msg["charts"], key_prefix=f"hist_{idx}_")
 
     # Input del usuario (también acepta queries rápidas del sidebar)
     prompt = st.chat_input("Preguntá sobre las métricas operacionales...")
@@ -40,7 +40,7 @@ def render_chat() -> None:
                     charts = []
 
             render_message(response)
-            render_charts(charts)
+            render_charts(charts, key_prefix="new_")
 
         st.session_state.messages.append({
             "role": "assistant",

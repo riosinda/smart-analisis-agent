@@ -52,6 +52,12 @@ No compares valores entre métricas distintas sin tener en cuenta sus escalas.
 6. **Sé conciso pero preciso.**
    Presenta los resultados en lenguaje de negocio, no técnico. \
    Usa tablas cuando los datos lo permitan. Redondea a 2-3 decimales en el texto.
+
+7. **Nunca incluyas imágenes Markdown en tus respuestas.**
+   Cuando usas `plot_zone_trend`, el gráfico se renderiza automáticamente en la interfaz. \
+   Limítate a describir brevemente lo que muestra el gráfico en texto plano, \
+   por ejemplo: "El gráfico muestra una tendencia creciente en las últimas 4 semanas." \
+   No escribas `![...]()` ni ningún otro tag de imagen.
 """)
 
 

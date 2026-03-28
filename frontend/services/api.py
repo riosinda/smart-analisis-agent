@@ -1,6 +1,9 @@
+import os
+
 import httpx
 
-API_URL = "http://localhost:8000/api/chat"
+_BASE = os.environ.get("BACKEND_URL", "http://localhost:8000")
+API_URL = f"{_BASE}/api/chat"
 TIMEOUT = 120.0
 
 
