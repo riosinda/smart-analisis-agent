@@ -1,8 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { Plus, MessageSquare, Trash2, FileDown, Loader2 } from 'lucide-react';
-import { downloadReport } from '@/lib/api';
+import { useRouter } from 'next/navigation';
+import { Plus, MessageSquare, Trash2, BarChart2 } from 'lucide-react';
 import type { Conversation } from '@/lib/types';
 
 interface Props {
@@ -24,14 +23,7 @@ function relativeTime(ts: number): string {
 }
 
 export function Sidebar({ conversations, activeId, onNew, onSelect, onDelete }: Props) {
-  const [downloading, setDownloading] = useState(false);
-
-  const handleReport = async () => {
-    setDownloading(true);
-    try { await downloadReport(); }
-    catch (e) { console.error(e); }
-    finally { setDownloading(false); }
-  };
+  const router = useRouter();
 
   return (
     <aside className="flex w-64 shrink-0 flex-col bg-[#0F0F0F] text-white">
@@ -98,15 +90,11 @@ export function Sidebar({ conversations, activeId, onNew, onSelect, onDelete }: 
       {/* Report button */}
       <div className="px-3 pb-4">
         <button
-          onClick={handleReport}
-          disabled={downloading}
-          className="flex w-full items-center gap-2 rounded-xl bg-white/8 px-3 py-2.5 text-sm font-medium text-white/80 transition-colors hover:bg-white/12 hover:text-white disabled:opacity-50"
+          onClick={() => router.push('/report')}
+          className="flex w-full items-center gap-2 rounded-xl bg-white/8 px-3 py-2.5 text-sm font-medium text-white/80 transition-colors hover:bg-white/12 hover:text-white"
         >
-          {downloading
-            ? <Loader2 className="h-4 w-4 animate-spin" />
-            : <FileDown className="h-4 w-4" />
-          }
-          {downloading ? 'Generando...' : 'Generar Reporte PDF'}
+          <BarChart2 className="h-4 w-4" />
+          Ver Reporte de Insights
         </button>
       </div>
     </aside>

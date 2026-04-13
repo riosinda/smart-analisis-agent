@@ -1,10 +1,9 @@
 from fastapi import APIRouter, HTTPException
-from fastapi.responses import Response
 from langchain_core.messages import HumanMessage, ToolMessage
 
 from app.agent.graph import build_agent
 from app.agent.tools import TOOLS, CHART_PREFIX
-from app.api.schemas import ChatRequest, ChatResponse
+from app.api.schemas import ChatRequest, ChatResponse, ReportResponse
 from app.services.report import generate_report
 
 router = APIRouter()
@@ -43,18 +42,16 @@ async def chat(request: ChatRequest) -> ChatResponse:
     return ChatResponse(response=response_text, charts=charts, thread_id=request.thread_id)
 
 
-@router.post("/report")
-async def report() -> Response:
+@router.post("/report", response_model=ReportResponse)
+async def report() -> ReportResponse:
     """
-    Genera el reporte ejecutivo de insights automáticos (2.2) y lo retorna como PDF.
+    Genera el reporte ejecutivo de insights automáticos (2.2).
+    Retorna JSON estructurado: narrativa LLM + 4 tablas de datos para
+    que el frontend construya y exporte el reporte.
     """
     try:
-        pdf_bytes = generate_report()
+        data = generate_report()
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-    return Response(
-        content=pdf_bytes,
-        media_type="application/pdf",
-        headers={"Content-Disposition": "attachment; filename=reporte_insights_rappi.pdf"},
-    )
+    return ReportResponse(**data)

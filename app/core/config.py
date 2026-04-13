@@ -14,7 +14,7 @@ class Settings(BaseSettings):
     GEMINI_MODEL: str = "gemini-2.5-flash"
     
     # Ollama
-    OLLAMA_MODEL: str = "llama3.1"
+    OLLAMA_MODEL: str = "gemma4:e4b"
     OLLAMA_BASE_URL: str = "http://localhost:11434"
 
     # Parámetros compartidos
