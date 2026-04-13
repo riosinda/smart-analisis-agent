@@ -91,7 +91,7 @@ uv run streamlit run frontend/app.py
 ```
 smart-analisis-agent/
 ├── app/                    # Servicio backend (FastAPI)
-│   ├── agent/              # LangGraph ReAct agent (2.1)
+│   ├── agent/              # LangGraph ReAct agent
 │   ├── api/                # Endpoints y schemas
 │   ├── core/               # Configuración
 │   ├── services/           # Tools del agente y pipeline de reporte

@@ -36,18 +36,21 @@ No compares valores entre métricas distintas sin tener en cuenta sus escalas.
    Pasa el texto en minúsculas y sin acentos. Las tools manejan la normalización internamente.
 
 3. **Encadena tools cuando la pregunta lo requiere.**
-   Si el usuario pregunta "¿por qué crece Chapinero?", primero llama `explain_trend` para ver \
-   qué métricas crecen en esa zona, y luego `get_zone_trend` para mostrar la evolución.
+   Si el usuario pregunta "¿por qué crece Chapinero?", primero llama `explain_trend(direction="top")` \
+   para ver qué métricas crecen en esa zona, y luego `get_zone_trend` para mostrar la evolución detallada. \
+   Si pregunta por zonas problemáticas o en caída, usa `explain_trend(direction="bottom")`.
 
 4. **Sugiere análisis de seguimiento proactivamente.**
    Después de responder, ofrece una pregunta de seguimiento relevante. \
    Ejemplo: si mostraste el top de zonas, sugiere "¿Querés ver la tendencia de las últimas 8 semanas para alguna de estas zonas?"
 
 5. **Interpreta el contexto de negocio.**
-   - "Zonas problemáticas" → zonas con métricas en deterioro (usa `explain_trend` con direction descendente)
-   - "Zonas que no están rindiendo" → bottom performers, usa `get_top_zones` con direction="asc"
+   - "Zonas problemáticas" / "zonas en caída" / "deterioro" → usa `explain_trend(direction="bottom")`
+   - "Zonas que crecen" / "mejor momento" / "aceleración" → usa `explain_trend(direction="top")`
+   - "Zonas que no están rindiendo" → bottom performers puntuales, usa `get_top_zones(direction="asc")`
    - "Cómo va X" → tendencia temporal, usa `get_zone_trend`
    - "Comparar" → usa `compare_segments`
+   - Cuando el usuario menciona un tipo de zona (Wealthy / Non Wealthy), pasa `zone_type` al tool.
 
 6. **Sé conciso pero preciso.**
    Presenta los resultados en lenguaje de negocio, no técnico. \
@@ -112,12 +115,47 @@ FEW_SHOT_EXAMPLES = [
         "o comparar la conversión entre zonas Wealthy y Non Wealthy en México?"
     )),
 
-    # Caso 2: pregunta multivariable
+    # Caso 2: zonas en declive (direction="bottom")
+    HumanMessage(content="¿Qué zonas están cayendo más en Brasil?"),
+    AIMessage(
+        content="Voy a buscar las zonas con mayor caída porcentual en las últimas 5 semanas en Brasil.",
+        tool_calls=[{
+            "id": "call_003",
+            "name": "explain_trend",
+            "args": {
+                "n_weeks": 5,
+                "top_n": 10,
+                "direction": "bottom",
+                "country": "BR"
+            }
+        }]
+    ),
+    ToolMessage(
+        content=(
+            "| COUNTRY | CITY | ZONE | METRIC | L5W_ROLL | L0W_ROLL | growth_abs | growth_pct |\n"
+            "|---|---|---|---|---|---|---|---|\n"
+            "| BR | São Paulo | Zona Norte | Perfect Orders | 0.82 | 0.61 | -0.21 | -25.61 |\n"
+            "| BR | Rio | Centro | Pro Adoption | 0.45 | 0.34 | -0.11 | -24.44 |"
+        ),
+        tool_call_id="call_003"
+    ),
+    AIMessage(content=(
+        "Estas son las zonas con mayor caída en Brasil en las últimas 5 semanas:\n\n"
+        "| COUNTRY | CITY | ZONE | METRIC | L5W_ROLL | L0W_ROLL | growth_abs | growth_pct |\n"
+        "|---|---|---|---|---|---|---|---|\n"
+        "| BR | São Paulo | Zona Norte | Perfect Orders | 0.82 | 0.61 | -0.21 | -25.61 |\n"
+        "| BR | Rio | Centro | Pro Adoption | 0.45 | 0.34 | -0.11 | -24.44 |\n\n"
+        "La columna `growth_pct` muestra la variación porcentual: valores negativos indican caída. "
+        "Zona Norte (São Paulo) perdió un 25.6% en Perfect Orders, lo que sugiere un deterioro reciente en calidad de órdenes.\n\n"
+        "¿Querés ver la evolución semana a semana de Perfect Orders en Zona Norte para identificar cuándo empezó la caída?"
+    )),
+
+    # Caso 3: pregunta multivariable
     HumanMessage(content="¿Qué zonas tienen alto Lead Penetration pero bajo Perfect Order?"),
     AIMessage(
         content="Voy a buscar zonas que cumplan ambas condiciones simultáneamente.",
         tool_calls=[{
-            "id": "call_003",
+            "id": "call_004",
             "name": "find_zones_multi_criteria",
             "args": {
                 "criteria": [
@@ -129,7 +167,7 @@ FEW_SHOT_EXAMPLES = [
     ),
     ToolMessage(
         content="| COUNTRY | CITY | ZONE | ... | Lead Penetration | Perfect Orders |\n|---|---|---|---|---|---|\n| CO | Bogotá | ... | ... | 0.89 | 0.61 |",
-        tool_call_id="call_003"
+        tool_call_id="call_004"
     ),
     AIMessage(content=(
         "Encontré zonas con alto Lead Penetration (percentil 75+) pero bajo Perfect Order (percentil 25-):\n\n"

@@ -5,6 +5,8 @@ import pandas as pd
 import plotly.graph_objects as go
 from langchain_core.tools import tool
 
+from app.services.explain_trend_service import explain_trend as _explain_trend_service
+
 # ---------------------------------------------------------------------------
 # Data loading — se carga una sola vez al importar el módulo
 # ---------------------------------------------------------------------------
@@ -213,36 +215,29 @@ def find_zones_multi_criteria(criteria: list[dict]) -> str:
 
 
 @tool
-def explain_trend(n_weeks: int = 5, top_n: int = 10, country: str = None,
-                  metric: str = None) -> str:
+def explain_trend(n_weeks: int = 5, top_n: int = 10, direction: str = "top",
+                  country: str = None, metric: str = None,
+                  zone_type: str = None) -> str:
     """
-    Identifica las zonas que más crecieron en las últimas N semanas.
-    Útil para preguntas como: "¿cuáles son las zonas que más crecen y por qué?".
+    Identifica las zonas con mayor crecimiento o mayor caída en las últimas N semanas.
+    Útil para preguntas como "¿qué zonas están creciendo más?" o "¿qué zonas están cayendo?".
 
     Args:
-        n_weeks: Ventana de semanas para medir el crecimiento (máximo 8). Default 5.
+        n_weeks: Ventana de semanas para medir la variación (máximo 8). Default 5.
         top_n: Cantidad de zonas a retornar. Default 10.
-        country: Filtrar por código de país (ej: "MX").
-        metric: Filtrar por métrica específica. Si es None, busca en todas las métricas.
+        direction: "top" para zonas que más crecieron, "bottom" para zonas que más cayeron.
+        country: Filtrar por código de país (ej: "MX", "CO"). Default None (todos los países).
+        metric: Filtrar por métrica específica. Default None (todas las métricas).
+        zone_type: Filtrar por tipo de zona ("Wealthy" o "Non Wealthy"). Default None.
     """
-    n_weeks = min(n_weeks, 8)
-    start_col = _ROLL_COLS[-(n_weeks + 1)]
-
-    # Excluir filas donde el valor inicial es 0 (generan growth_pct = inf)
-    mask = _df[start_col].notna() & _df["L0W_ROLL"].notna() & (_df[start_col] != 0)
-    if country:
-        mask &= _df["COUNTRY_NORM"] == _normalize(country)
-    if metric:
-        mask &= _df["METRIC_NORM"] == _normalize(metric)
-
-    base = _df[mask].copy()
-    base["growth_pct"] = ((base["L0W_ROLL"] - base[start_col]) / base[start_col].abs() * 100).round(2)
-
-    result = (
-        base.sort_values("growth_pct", ascending=False)
-        [["COUNTRY", "CITY", "ZONE", "METRIC", start_col, "L0W_ROLL", "growth_pct"]]
-        .head(top_n)
-        .reset_index(drop=True)
+    result = _explain_trend_service(
+        _df,
+        n_weeks=n_weeks,
+        top_n=top_n,
+        direction=direction,
+        country=country,
+        metric=metric,
+        zone_type=zone_type,
     )
 
     if result.empty:

@@ -21,11 +21,12 @@ services:
 
   frontend:
     build:
-      context: .
-      dockerfile: frontend/Dockerfile
+      context: ./frontend
+      dockerfile: Dockerfile
     ports:
-      - "8501:8501"
+      - "3000:3000"
     environment:
+      NEXT_PUBLIC_BACKEND_URL: http://localhost:8000
       BACKEND_URL: http://backend:8000
     depends_on:
       backend:
